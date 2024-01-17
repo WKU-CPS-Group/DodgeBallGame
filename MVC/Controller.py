@@ -6,16 +6,17 @@ from Components.Mediapipe_Models.Mediapipe_Engine import *
 from Components.Segmentation.Segmentation_Engine import segmentation_engine
 import cv2
 import pygame
-
+import random
+import time
 class control(object):
     def __init__(self, evManager, model):
         self.evManager = evManager
         evManager.RegisterListener(self)
         self.model = model
         self.pageinitilized = False
-
+        self.standardized = False
         self.model.CV2_class = None
-
+        
     def initialize(self):
         """
         Initialize view.
@@ -24,12 +25,12 @@ class control(object):
         self.graphics.initialize()
 
     def input_event(self):
-        # if self.model.add_button.CheckisClicked() == 'clicked':
-        #     self.model.currentstate += 1
-        #     self.evManager.Post(StateChangeEvent(self.model.currentstate))
-        # elif self.model.minus_button.CheckisClicked() == 'clicked':
-        #     self.model.currentstate -= 1
-        #     self.evManager.Post(StateChangeEvent(self.model.currentstate))
+        if self.model.add_button.CheckisClicked() == 'clicked':
+            self.model.currentstate += 1
+            self.evManager.Post(StateChangeEvent(self.model.currentstate))
+        elif self.model.minus_button.CheckisClicked() == 'clicked':
+            self.model.currentstate -= 1
+            self.evManager.Post(StateChangeEvent(self.model.currentstate))
 
         self.model.input_event = pygame.event.get()    
         # Called for each game tick. We check our keyboard presses here.
@@ -42,9 +43,9 @@ class control(object):
                 self.evManager.Post(QuitEvent())
 
             # handle key down events
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.evManager.Post(StateChangeEvent(None))
+            # if event.type == pygame.KEYDOWN:
+            #     if event.key == pygame.K_ESCAPE:
+            #         self.evManager.Post(StateChangeEvent(None))
 
                 # # check key press for 1, 2, 3, 4, 5; if not same as current state, change state
                 # elif event.key == pygame.K_1:
@@ -69,6 +70,8 @@ class control(object):
         """
         if isinstance(event, InitializeEvent):
             self.initialize()
+        
+       
 
         # if the state is changing, reset the pageinitilized flag
         elif isinstance(event, StateChangeEvent):
@@ -87,7 +90,7 @@ class control(object):
                 if self.model.CV2_class == None:
                     self.model.CV2_class = CV2_engine()
                 self.model.FPS_class = FPS_engine()
-                if self.model.currentstate == 2:
+                if self.model.currentstate == 3:
                     self.model.Mediapipe_pose_class = mediapipe_pose_engine()
                 # elif self.model.currentstate == 3:
                 #     self.model.Mediapipe_hand_class = mediapipe_hand_engine()
@@ -113,32 +116,38 @@ class control(object):
 
                 try:
                     # Mediapipe Pose
-                    if self.model.currentstate == 2:
+                    if self.model.currentstate == 3:
                         self.model.Mediapipe_pose_class.process_image(self.model.img)
                         # self.model.Mediapipe_pose_class.expand_landmark()
-                    
-                    # Mediapipe Hand
-                    # elif self.model.currentstate == 3:
-                    #     self.model.Mediapipe_hand_class.process_image(self.model.img)
-                    
-                    # # Mediapipe FaceMesh
-                    # elif self.model.currentstate == 4:
-                    #     self.model.Mediapipe_FaceMesh_class.process_image(self.model.img)
-                    
-                    # # Mediapipe Holistic
-                    # elif self.model.currentstate == 5:   
-                    #     self.model.Mediapipe_Holistic_class.process_image(self.model.img)
                 except Exception as e:
                     print(e)
                     import traceback
                     traceback.print_exc()
+
+                print(time.time() - self.model.prev_time)
+                if 0 <(time.time() - self.model.prev_time -3) < 1:
+                    if self.model.Mediapipe_pose_class != None:
+                     self.model.Mediapipe_pose_class.generate_random_direction()
+                     self.model.prev_time = time.time()
+                     print(time.time() - self.model.prev_time)
+                     print("change the direction")
+                    else:
+                        print("didn't change direction")
+                    
+                # 不能使用等于号
+                if time.time() - self.model.start_time == 60:
+                    self.evManager.Post(PauseEvent())
+
                 """
                 Tell view to render after all Business Logic
                 """
+              
                 self.graphics.render()
-
-                
 
             self.input_event()
             
             
+ 
+
+
+
